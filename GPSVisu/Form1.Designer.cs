@@ -56,7 +56,7 @@
             this.chartPocetSatanuHis = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.chart7 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.chart8 = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            this.chart9 = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.chartTimeHis = new System.Windows.Forms.DataVisualization.Charting.Chart();
             ((System.ComponentModel.ISupportInitialize)(this.chartSpeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chartHeight)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chartPocetSatanu)).BeginInit();
@@ -65,7 +65,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.chartPocetSatanuHis)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chart7)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chart8)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.chart9)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chartTimeHis)).BeginInit();
             this.SuspendLayout();
             // 
             // chartSpeed
@@ -184,26 +184,27 @@
             this.chart8.TabIndex = 10;
             this.chart8.Text = "chart8";
             // 
-            // chart9
+            // chartTimeHis
             // 
             chartArea9.Name = "ChartArea1";
-            this.chart9.ChartAreas.Add(chartArea9);
+            this.chartTimeHis.ChartAreas.Add(chartArea9);
             legend9.Name = "Legend1";
-            this.chart9.Legends.Add(legend9);
-            this.chart9.Location = new System.Drawing.Point(34, 833);
-            this.chart9.Name = "chart9";
-            this.chart9.Size = new System.Drawing.Size(382, 396);
-            this.chart9.TabIndex = 9;
-            this.chart9.Text = "chart9";
+            this.chartTimeHis.Legends.Add(legend9);
+            this.chartTimeHis.Location = new System.Drawing.Point(34, 833);
+            this.chartTimeHis.Name = "chartTimeHis";
+            this.chartTimeHis.Size = new System.Drawing.Size(382, 396);
+            this.chartTimeHis.TabIndex = 9;
+            this.chartTimeHis.Text = "chartTimeHis";
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoScroll = true;
-            this.ClientSize = new System.Drawing.Size(1284, 785);
+            this.AutoScrollMinSize = new System.Drawing.Size(1024, 1024);
+            this.ClientSize = new System.Drawing.Size(1228, 515);
             this.Controls.Add(this.chart8);
-            this.Controls.Add(this.chart9);
+            this.Controls.Add(this.chartTimeHis);
             this.Controls.Add(this.chart7);
             this.Controls.Add(this.chartPocetSatanuHis);
             this.Controls.Add(this.chartHisHeight);
@@ -223,7 +224,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.chartPocetSatanuHis)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.chart7)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.chart8)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.chart9)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chartTimeHis)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -240,7 +241,7 @@
         private System.Windows.Forms.DataVisualization.Charting.Chart chartPocetSatanuHis;
         private System.Windows.Forms.DataVisualization.Charting.Chart chart7;
         private System.Windows.Forms.DataVisualization.Charting.Chart chart8;
-        private System.Windows.Forms.DataVisualization.Charting.Chart chart9;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chartTimeHis;
     }
 }
 

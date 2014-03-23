@@ -19,12 +19,13 @@ namespace GPSVisu
         private List<GSA> dataGSA = new List<GSA>();
         private List<RMC> dataRMC = new List<RMC>();
 
-        private const string nameLineSpeedHistogram = "rychleHis";
-        private const string nameLineSpeed = "rychle";
-        private const string nameLineHeight = "vyska";
-        private const string nameLineHeightHistogram = "vyska His";
-        private const string nameLineCounSat = "Pocet Statelitu";
-        private const string nameLineCounSatHistogram = "Pocet Statelitu His";
+        private const string nLineSpeedHis = "rychleHis";
+        private const string nLineSpeed = "rychle";
+        private const string nLineHeight = "vyska";
+        private const string nLineHeightHis = "vyska His";
+        private const string nLineSat = "Pocet Statelitu";
+        private const string nLineSatHis = "Pocet Statelitu His";
+        private const string nLineTimeHis = "Histogram casu mezi vetami";
 
         private const SeriesChartType nomalTypekCary = SeriesChartType.Point;
         private const SeriesChartType hisTypekCaru = SeriesChartType.Bar;
@@ -32,8 +33,7 @@ namespace GPSVisu
         private const int rozsahSpeed = 20;
         private const int rozahVEj = 300;
         private const int rozahSatani = 10;
-
-
+        private const int rozahCas = 2;
 
         #endregion
 
@@ -49,6 +49,9 @@ namespace GPSVisu
             InitChartu(chartHisHeight);
             InitChartu(chartPocetSatanuHis);
             InitChartu(chartSpeedHis);
+            InitChartu(chartTimeHis);
+            InitChartu(chart7);
+            InitChartu(chart8);
         }
 
         #region Eventsna kliknuti
@@ -80,25 +83,29 @@ namespace GPSVisu
         {
             double[] speedData = TakeSpeedFromRMCVector();
             double[] heightData = TakeHeightFromVectorGGA();
-            double[] satDataArray = TakeNumberSatFromGGAVector();
+            double[] satDataArray = TakeNumberSatFromGSAVector();
+            double[] casData = TakeDiferenceBetweenSentence();
 
             PrDelSerieChartu(chartSpeed);
-            DrawToGraphos(chartSpeed, speedData, nameLineSpeed, nomalTypekCary);
-
-            PrDelSerieChartu(chartSpeedHis);
-            DrawHistogram(chartSpeedHis, speedData, nameLineSpeedHistogram, hisTypekCaru, rozsahSpeed);
+            DrawToGraphos(chartSpeed, speedData, nLineSpeed, nomalTypekCary);
 
             PrDelSerieChartu(chartHeight);
-            DrawToGraphos(chartHeight, heightData, nameLineHeight, nomalTypekCary);
-
-            PrDelSerieChartu(chartHisHeight);
-            DrawHistogram(chartHisHeight, heightData, nameLineSpeedHistogram, hisTypekCaru, rozahVEj);
+            DrawToGraphos(chartHeight, heightData, nLineHeight, nomalTypekCary);
 
             PrDelSerieChartu(chartPocetSatanu);
-            DrawToGraphos(chartPocetSatanu, satDataArray, nameLineCounSat, nomalTypekCary);
+            DrawToGraphos(chartPocetSatanu, satDataArray, nLineSat, nomalTypekCary);
 
-            PrDelSerieChartu(chartPocetSatanuHis);
-            DrawHistogram(chartPocetSatanuHis, speedData, nameLineSpeedHistogram, hisTypekCaru, rozahSatani);
+            PrDelSerieChartu(chartTimeHis);
+            DrawHistogram(chartTimeHis, casData, nLineTimeHis, hisTypekCaru, rozahCas);
+
+            //PrDelSerieChartu(chartPocetSatanuHis);
+            //DrawHistogram(chartPocetSatanuHis, satDataArray, nLineSat, hisTypekCaru, rozahSatani);
+
+            //PrDelSerieChartu(chartSpeedHis);
+            //DrawHistogram(chartSpeedHis, speedData, nLineSpeedHis, hisTypekCaru, rozsahSpeed);
+
+            //PrDelSerieChartu(chartHisHeight);
+            //DrawHistogram(chartHisHeight, heightData, nLineHeightHis, hisTypekCaru, rozahVEj);
         }
         #endregion
 
@@ -171,18 +178,10 @@ namespace GPSVisu
             rData.Name = splitedRow[0];
             rData.SelectionMode = splitedRow[1];
             rData.ThreeDFix = Convert.ToInt32(splitedRow[2]);
-            rData.PRNsOfSatellites1 = splitedRow[3];
-            rData.PRNsOfSatellites2 = splitedRow[4];
-            rData.PRNsOfSatellites3 = splitedRow[5];
-            rData.PRNsOfSatellites4 = splitedRow[6];
-            rData.PRNsOfSatellites5 = splitedRow[7];
-            rData.PRNsOfSatellites6 = splitedRow[8];
-            rData.PRNsOfSatellites7 = splitedRow[9];
-            rData.PRNsOfSatellites8 = splitedRow[10];
-            rData.PRNsOfSatellites9 = splitedRow[11];
-            rData.PRNsOfSatellites10 = splitedRow[12];
-            rData.PRNsOfSatellites11 = splitedRow[13];
-            rData.PRNsOfSatellites12 = splitedRow[14];
+            for (int i = 0; i < 12; i++)
+            {
+               rData.PRNsOfSatellites[i] = Convert.ToDouble(splitedRow[i+3]); 
+            }
             rData.PDOP = Convert.ToDouble(splitedRow[15]);
             rData.HDOP = Convert.ToDouble(splitedRow[16]);
             rData.VDOP = Convert.ToDouble(pomoc[0]);
@@ -226,10 +225,6 @@ namespace GPSVisu
 
         #endregion
 
-
-
-
-
         #region Zakladni vztahovani dat z naparsovaneho souboru
 
         public double[] TakeHeightFromVectorGGA()
@@ -245,13 +240,18 @@ namespace GPSVisu
 
         }
 
-        public double[] TakeNumberSatFromGGAVector()
+        public double[] TakeNumberSatFromGSAVector()
         {
-            double[] satArr = new double[dataGGA.Count()];
+            double[] satArr = new double[dataGSA.Count()];
             int iter = 0;
-            foreach (GGA nSat in dataGGA)
+            foreach (GSA nSat in dataGSA)
             {
-                satArr[iter] = nSat.NuberSat;
+                double sumaSat = 0;
+                for (int i = 0; i < 12; i++)
+                {
+                    sumaSat+=nSat.PRNsOfSatellites[i];
+                }
+                satArr[iter] = sumaSat;
                 iter++;
             }
             return satArr;
@@ -271,6 +271,34 @@ namespace GPSVisu
 
         }
 
+        public double[] TakeDiferenceBetweenSentence()
+        {
+            int delkosVecsa =dataRMC.Count() - 1;
+            double[] senArr = new double[delkosVecsa];
+            List<DateTime> casoveJednot = new List<DateTime>();
+            foreach (RMC item in dataRMC)
+            {
+
+                casoveJednot.Add(new DateTime(
+                    Convert.ToInt32("20"+item.Date.Substring(4, 2))/*y*/,
+                    Convert.ToInt32(item.Date.Substring(2, 2))/*mon*/,
+                    Convert.ToInt32(item.Date.Substring(0, 2))/*d*/,
+                    Convert.ToInt32(item.Time.Substring(0, 2))/*h*/,
+                    Convert.ToInt32(item.Time.Substring(2, 2))/*min*/,
+                    Convert.ToInt32(item.Time.Substring(4, 2))/*m*/
+                    ));
+
+            }
+
+            for (int i = 0; i < delkosVecsa; i++)
+            {
+                senArr[i] = (casoveJednot[i + 1] - casoveJednot[i]).Seconds;
+            }
+
+
+            return senArr;
+        }
+
         #endregion
 
         #region Bezne rutiny
@@ -281,7 +309,7 @@ namespace GPSVisu
         /// <param name="route">Cesta k souboru</param>
         private string[] ReadDataFromFile(string route)
         {
-            return  File.ReadAllLines(route);
+            return File.ReadAllLines(route);
         }
 
         private string ListFileTerminals()
@@ -304,7 +332,7 @@ namespace GPSVisu
             }
 
             return seznamCtenychSouboru;
-        
+
         }
 
         private double[] Histogram(double[] data, int range)
