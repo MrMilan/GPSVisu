@@ -226,15 +226,22 @@ namespace GPSVisu
             double diference = data.Max() - data.Min();
             int group = (int)(diference / range);
             double[] his = new double[group];
-            for (int i = 0; i < group; i++)
+
+
+            for (int j = 0; j < data.Length; j++)
             {
-                for (int j = 0; j < data.Length; j++)
+                for (int i = 0; i < group; i++)
                 {
-                    if (data[j] >= (data.Min()+(range*i)) && data[j] < (data.Min()+(range*(i+1))))
+                    if (data[j] > (data.Min() + (range * i)) && data[j] <= (data.Min() + (range * (i + 1))))
                     {
                         his[i]++;
+                        break;
                     }
-
+                    if(data[j] == data.Min())
+                    {
+                        his[i]++;
+                        break;
+                    }
                 }
             }
             return his;
@@ -252,15 +259,14 @@ namespace GPSVisu
         /// </summary>
         /// <param name="inputDataArray">Nacita vstupni double pole</param>
         /// <param name="nameLine">Nazev rady</param>
-
         public string[] ReplaceNull(string[] inputStringArray)
         {
 
             for (int i = 0; i < inputStringArray.Length; i++)
             {
-                if(inputStringArray[i]=="")
+                if (String.IsNullOrWhiteSpace(inputStringArray[i]))
                 {
-                inputStringArray[i]="0";
+                    inputStringArray[i] = "0";
                 }
             }
             return inputStringArray;
@@ -281,7 +287,7 @@ namespace GPSVisu
             int range = 2;
             chartSpeedHis.Series.Add(name);
             chartSpeedHis.Series[name].ChartType = SeriesChartType.Bar;
-            double[] pokus = { 1, 2, 3, 4, 5, 6, 7,7,7,7, 1, 2, 3, 4, 5, 6 };
+            double[] pokus = { 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 1, 2, 3, 4, 5, 6 };
 
             //double[] speeDatas = new double[speeDat.Length/20];
             //int k = 0;
@@ -291,11 +297,11 @@ namespace GPSVisu
             //    k++;
             //}
 
-            double[] inputDataHis = Histogram(pokus,range);
-            for (int i = 0; i < inputDataHis.Length; i++)
-            {
-                chartSpeedHis.Series[name].Points.AddXY(inputDataHis.Min()+(i*range), inputDataHis[i]);
-            }
+            double[] inputDataHis = Histogram(pokus, range);
+            //for (int i = 0; i < inputDataHis.Length; i++)
+            //{
+            //    chartSpeedHis.Series[name].Points.AddXY(inputDataHis.Min()+(i*range), inputDataHis[i]);
+            //}
 
         }
 
@@ -364,6 +370,6 @@ namespace GPSVisu
 
         }
 
-       
+
     }
 }
