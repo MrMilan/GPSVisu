@@ -25,9 +25,9 @@ namespace GPSVisu
         public string Time;
         public char Status;
         public double Latitude;
-        public char CharLatitude;
+        public string CharLatitude;
         public double Longitude;
-        public char CharLongitude;
+        public string CharLongitude;
         public double SpeedOverGround;
         public double TrackAngleDegree;
         public string Date;

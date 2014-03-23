@@ -26,8 +26,11 @@ namespace GPSVisu
         private const string nLineSat = "Pocet Statelitu";
         private const string nLineSatHis = "Pocet Statelitu His";
         private const string nLineTimeHis = "Histogram casu mezi vetami";
+        private const string nLineXYRMC = "Souradnice XY RMC";
+        private const string nLineXYGGA = "Souradnice XY GGA";
 
-        private const SeriesChartType nomalTypekCary = SeriesChartType.Point;
+        private const SeriesChartType nomalTypekBod = SeriesChartType.Point;
+        private const SeriesChartType nomalTypekCara = SeriesChartType.Line;
         private const SeriesChartType hisTypekCaru = SeriesChartType.Bar;
 
         private const int rozsahSpeed = 20;
@@ -50,8 +53,8 @@ namespace GPSVisu
             InitChartu(chartPocetSatanuHis);
             InitChartu(chartSpeedHis);
             InitChartu(chartTimeHis);
-            InitChartu(chart7);
-            InitChartu(chart8);
+            InitChartu(chartXY);
+
         }
 
         #region Eventsna kliknuti
@@ -86,29 +89,37 @@ namespace GPSVisu
             double[] satDataArray = TakeNumberSatFromGSAVector();
             double[] casData = TakeDiferenceBetweenSentence();
 
+            double[,] xyDataRMC = TakeXYRMC();
+            double[,] xyDataGGA = TakeXYGGA();
+
+
             PrDelSerieChartu(chartSpeed);
-            DrawToGraphos(chartSpeed, speedData, nLineSpeed, nomalTypekCary);
+            RdawToGraphos(chartSpeed, speedData, nLineSpeed, nomalTypekBod);
 
             PrDelSerieChartu(chartHeight);
-            DrawToGraphos(chartHeight, heightData, nLineHeight, nomalTypekCary);
+            RdawToGraphos(chartHeight, heightData, nLineHeight, nomalTypekBod);
 
             PrDelSerieChartu(chartPocetSatanu);
-            DrawToGraphos(chartPocetSatanu, satDataArray, nLineSat, nomalTypekCary);
+            RdawToGraphos(chartPocetSatanu, satDataArray, nLineSat, nomalTypekBod);
 
             PrDelSerieChartu(chartTimeHis);
-            DrawHistogram(chartTimeHis, casData, nLineTimeHis, hisTypekCaru, rozahCas);
+            RdawHistogram(chartTimeHis, casData, nLineTimeHis, hisTypekCaru, rozahCas);
 
-            //PrDelSerieChartu(chartPocetSatanuHis);
-            //DrawHistogram(chartPocetSatanuHis, satDataArray, nLineSat, hisTypekCaru, rozahSatani);
+            PrDelSerieChartu(chartPocetSatanuHis);
+            RdawHistogram(chartPocetSatanuHis, satDataArray, nLineSat, hisTypekCaru, rozahSatani);
 
-            //PrDelSerieChartu(chartSpeedHis);
-            //DrawHistogram(chartSpeedHis, speedData, nLineSpeedHis, hisTypekCaru, rozsahSpeed);
+            PrDelSerieChartu(chartSpeedHis);
+            RdawHistogram(chartSpeedHis, speedData, nLineSpeedHis, hisTypekCaru, rozsahSpeed);
 
-            //PrDelSerieChartu(chartHisHeight);
-            //DrawHistogram(chartHisHeight, heightData, nLineHeightHis, hisTypekCaru, rozahVEj);
+            PrDelSerieChartu(chartHisHeight);
+            RdawHistogram(chartHisHeight, heightData, nLineHeightHis, hisTypekCaru, rozahVEj);
+
+            PrDelSerieChartu(chartXY);
+            RdawToGraphos(chartXY, xyDataRMC, nLineXYRMC, nomalTypekCara);
+            RdawToGraphos(chartXY, xyDataGGA, nLineXYGGA, nomalTypekCara);
+
         }
         #endregion
-
 
         #region Splitovani a parsovani dat
 
@@ -116,20 +127,45 @@ namespace GPSVisu
         {
             for (int i = 0; i < inputDataFromFile.Length; i++)
             {
+                string checkSum = GetChecksum(inputDataFromFile[i]);
                 string[] transferLevel = inputDataFromFile[i].Split(',');
 
                 if (transferLevel[0] == "$GPGGA")
                 {
-                    dataGGA.Add(GetGGAData(transferLevel));
+                    GGA ggaItem = GetGGAData(transferLevel);
+                    if (ggaItem.Checksum.Substring(1, 2) == checkSum)
+                    {
+                        dataGGA.Add(ggaItem);
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
                 if (transferLevel[0] == "$GPGSA")
                 {
-                    dataGSA.Add(GetGSAData(transferLevel));
+                    GSA gsaItem = GetGSAData(transferLevel);
+                    if (gsaItem.Checksum == checkSum)
+                    {
+                        dataGSA.Add(gsaItem);
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
 
                 if (transferLevel[0] == "$GPRMC")
                 {
-                    dataRMC.Add(GetRMCData(transferLevel));
+                    RMC rmcItem = GetRMCData(transferLevel);
+                    if (rmcItem.Checksum == checkSum)
+                    {
+                        dataRMC.Add(rmcItem);
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
 
             }
@@ -144,10 +180,10 @@ namespace GPSVisu
             splitedRow = ReplaceNull(splitedRow);
             rData.Name = splitedRow[0];
             rData.Time = splitedRow[1];
-            rData.Latitude = Convert.ToDouble(splitedRow[2]);
-            rData.CharLatitude = Convert.ToChar(splitedRow[3]);
-            rData.Longitude = Convert.ToDouble(splitedRow[4]);
-            rData.CharLongitude = Convert.ToChar(splitedRow[5]);
+            rData.CharLatitude = splitedRow[3];
+            rData.CharLongitude = splitedRow[5];
+            rData.Latitude = ConvetToDEgLat(splitedRow[2], rData.CharLatitude);
+            rData.Longitude = ConvetToDEgLong(splitedRow[4], rData.CharLongitude);
             rData.FixQuality = Convert.ToInt32(splitedRow[6]);
             rData.NuberSat = Convert.ToInt32(splitedRow[7]);
             rData.HorizontalDilution = Convert.ToDouble(splitedRow[8]);
@@ -166,7 +202,7 @@ namespace GPSVisu
             splitedRow = ReplaceSeparator(splitedRow, ".", ",");
             splitedRow = ReplaceNull(splitedRow);
             string[] pomoc;
-            if (splitedRow[17] != "")
+            if (String.IsNullOrWhiteSpace(splitedRow[17]))
             {
                 pomoc = new string[2] { "0", "0" };
             }
@@ -180,11 +216,11 @@ namespace GPSVisu
             rData.ThreeDFix = Convert.ToInt32(splitedRow[2]);
             for (int i = 0; i < 12; i++)
             {
-               rData.PRNsOfSatellites[i] = Convert.ToDouble(splitedRow[i+3]); 
+                rData.PRNsOfSatellites[i] = Convert.ToDouble(splitedRow[i + 3]);
             }
             rData.PDOP = Convert.ToDouble(splitedRow[15]);
             rData.HDOP = Convert.ToDouble(splitedRow[16]);
-            rData.VDOP = Convert.ToDouble(pomoc[0]);
+            rData.VDOP = Convert.ToDouble(String.IsNullOrWhiteSpace(pomoc[0]) ? "0" : pomoc[0]);
             rData.Checksum = pomoc[1];
 
             return rData;
@@ -199,21 +235,21 @@ namespace GPSVisu
             splitedRow = ReplaceSeparator(splitedRow, ".", ",");
             splitedRow = ReplaceNull(splitedRow);
             string[] pomoc;
-            if (splitedRow[11] != "")
+            if (String.IsNullOrWhiteSpace(splitedRow[12]))
             {
                 pomoc = new string[2] { "0", "0" };
             }
             else
             {
-                pomoc = splitedRow[11].Split('*');
+                pomoc = splitedRow[12].Split('*');
             }
             rData.Name = splitedRow[0];
             rData.Time = splitedRow[1];
             rData.Status = Convert.ToChar(splitedRow[2]);
-            rData.Latitude = Convert.ToDouble(splitedRow[3]);
-            rData.CharLatitude = Convert.ToChar(splitedRow[4]);
-            rData.Longitude = Convert.ToDouble(splitedRow[5]);
-            rData.CharLongitude = Convert.ToChar(splitedRow[6]);
+            rData.CharLongitude = (splitedRow[6]);
+            rData.CharLatitude = (splitedRow[4]);
+            rData.Longitude = ConvetToDEgLong(splitedRow[5],rData.CharLongitude);
+            rData.Latitude = ConvetToDEgLat(splitedRow[3],rData.CharLatitude);
             rData.SpeedOverGround = Convert.ToDouble(splitedRow[7]);
             rData.TrackAngleDegree = Convert.ToDouble(splitedRow[8]);
             rData.Date = splitedRow[9];
@@ -249,7 +285,7 @@ namespace GPSVisu
                 double sumaSat = 0;
                 for (int i = 0; i < 12; i++)
                 {
-                    sumaSat+=nSat.PRNsOfSatellites[i];
+                    sumaSat += nSat.PRNsOfSatellites[i];
                 }
                 satArr[iter] = sumaSat;
                 iter++;
@@ -273,14 +309,14 @@ namespace GPSVisu
 
         public double[] TakeDiferenceBetweenSentence()
         {
-            int delkosVecsa =dataRMC.Count() - 1;
+            int delkosVecsa = dataRMC.Count() - 1;
             double[] senArr = new double[delkosVecsa];
             List<DateTime> casoveJednot = new List<DateTime>();
             foreach (RMC item in dataRMC)
             {
 
                 casoveJednot.Add(new DateTime(
-                    Convert.ToInt32("20"+item.Date.Substring(4, 2))/*y*/,
+                    Convert.ToInt32("20" + item.Date.Substring(4, 2))/*y*/,
                     Convert.ToInt32(item.Date.Substring(2, 2))/*mon*/,
                     Convert.ToInt32(item.Date.Substring(0, 2))/*d*/,
                     Convert.ToInt32(item.Time.Substring(0, 2))/*h*/,
@@ -297,6 +333,34 @@ namespace GPSVisu
 
 
             return senArr;
+        }
+
+        public double[,] TakeXYRMC()
+        {
+            double[,] naseSourad = new double[2, dataRMC.Count()];
+            int ite = 0;
+            foreach (RMC sourad in dataRMC)
+            {
+                naseSourad[0, ite] = sourad.Longitude;
+                naseSourad[1, ite] = sourad.Latitude;
+                ite++;
+            }
+
+            return naseSourad;
+        }
+
+        public double[,] TakeXYGGA()
+        {
+            double[,] naseSourad = new double[2, dataGGA.Count()];
+            int ite = 0;
+            foreach (GGA sourad in dataGGA)
+            {
+                naseSourad[0, ite] = sourad.Longitude;
+                naseSourad[1, ite] = sourad.Latitude;
+                ite++;
+            }
+
+            return naseSourad;
         }
 
         #endregion
@@ -362,6 +426,53 @@ namespace GPSVisu
             return his;
         }
 
+        private static string GetChecksum(string sentence)
+        {
+            //Start with first Item
+            int checksum = Convert.ToByte(sentence[sentence.IndexOf('$') + 1]);
+            // Loop through all chars to get a checksum
+            for (int i = sentence.IndexOf('$') + 2; i < sentence.IndexOf('*'); i++)
+            {
+                // No. XOR the checksum with this character's value
+                checksum ^= Convert.ToByte(sentence[i]);
+            }
+            // Return the checksum formatted as a two-character hexadecimal
+            return checksum.ToString("X2");
+        }
+
+        private double ConvetToDEgLong(string nonDegValue, string logn)
+        {
+            if (logn == "E" || logn == "e")
+            {
+                return Convert.ToDouble(nonDegValue.Substring(0, 3)) + (Convert.ToDouble(nonDegValue.Substring(3, 5)) / (60));
+            }
+            if (logn == "W" || logn == "w")
+            {
+                return -(Convert.ToDouble(nonDegValue.Substring(0, 3)) + (Convert.ToDouble(nonDegValue.Substring(3, 5)) / (60)));
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private double ConvetToDEgLat(string nonDegValue, string lat)
+        {
+            if (lat == "N" || lat == "n")
+            {
+                return Convert.ToDouble(nonDegValue.Substring(0, 2)) + (Convert.ToDouble(nonDegValue.Substring(2, 6)) / (60));
+            }
+            if (lat == "S" || lat == "s")
+            {
+                return -(Convert.ToDouble(nonDegValue.Substring(0, 2)) + (Convert.ToDouble(nonDegValue.Substring(2, 6)) / (60)));
+            }
+            else
+            { 
+                return 0;
+            }
+            
+        }
+
         #region rReplace metody
 
         private string[] ReplaceSeparator(string[] inputStringArray, string oldSeparator, string newSeparator)
@@ -417,7 +528,13 @@ namespace GPSVisu
             }
         }
 
-        private void DrawLineDataToChart(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputDataArray, string nameLine)
+        private void PrepareSerie(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, string nameLine, SeriesChartType seriesChartType)
+        {
+            nameChartek.Series.Add(nameLine);
+            nameChartek.Series[nameLine].ChartType = seriesChartType;
+        }
+
+        private void RdawLineDataToChart(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputDataArray, string nameLine)
         {
             for (int i = 0; i < inputDataArray.Length; i++)
             {
@@ -425,20 +542,29 @@ namespace GPSVisu
             }
         }
 
-        private void DrawToGraphos(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputArray, string nameLine, SeriesChartType seriesChartType)
+        private void RdawLineDataToXY(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[,] inputDataArrayXY, string nameLine)
+        {
+            for (int i = 0; i < inputDataArrayXY.GetLength(1); i++)
+            {
+                nameChartek.Series[nameLine].Points.AddXY(inputDataArrayXY[0, i], inputDataArrayXY[1, i]);
+            }
+        }
+
+        private void RdawToGraphos(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputArray, string nameLine, SeriesChartType seriesChartType)
         {
             PrepareSerie(nameChartek, nameLine, seriesChartType);
-            DrawLineDataToChart(nameChartek, inputArray, nameLine);
+            RdawLineDataToChart(nameChartek, inputArray, nameLine);
 
         }
 
-        private void PrepareSerie(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, string nameLine, SeriesChartType seriesChartType)
+        private void RdawToGraphos(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[,] inputArrayXY, string nameLine, SeriesChartType seriesChartType)
         {
-            nameChartek.Series.Add(nameLine);
-            nameChartek.Series[nameLine].ChartType = seriesChartType;
+            PrepareSerie(nameChartek, nameLine, seriesChartType);
+            RdawLineDataToXY(nameChartek, inputArrayXY, nameLine);
+
         }
 
-        private void DrawHistogram(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputArray, string nameLine, SeriesChartType seriesChartType, int range)
+        private void RdawHistogram(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputArray, string nameLine, SeriesChartType seriesChartType, int range)
         {
             if (range == null)
             {

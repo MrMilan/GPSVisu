@@ -36,9 +36,9 @@ namespace GPSVisu
         public string Name;
         public string Time;
         public double Latitude;
-        public char CharLatitude;
+        public string CharLatitude;
         public double Longitude;
-        public char CharLongitude;
+        public string CharLongitude;
         public int FixQuality;
         public int NuberSat;
         public double HorizontalDilution;
