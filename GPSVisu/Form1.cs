@@ -19,6 +19,15 @@ namespace GPSVisu
         private List<GSA> dataGSA = new List<GSA>();
         private List<RMC> dataRMC = new List<RMC>();
 
+        private const string nameLineSpeedHistogram = "rychleHis";
+        private const string nameLineSpeed = "rychle";
+        private const string nameLineHeight = "vyska";
+        private const string nameLineHeightHistogram = "vyska His";
+        private const string nameLineCounSat = "Pocet Statelitu";
+        private const string nameLineCounSatHistogram = "Pocet Statelitu His";
+        
+
+
         #endregion
 
 
@@ -26,38 +35,18 @@ namespace GPSVisu
         {
             // inicializace grafu
             InitializeComponent();
-            chartSpeed.ChartAreas[0].AxisX.ScaleView.Zoomable = true;
-            chartSpeed.ChartAreas[0].AxisY.ScaleView.Zoomable = true;
 
-            chartSpeed.ChartAreas[0].CursorX.AutoScroll = true;
-            chartSpeed.ChartAreas[0].CursorY.AutoScroll = true;
-
-            chartSpeed.ChartAreas[0].CursorX.IsUserSelectionEnabled = true;
-            chartSpeed.ChartAreas[0].CursorY.IsUserSelectionEnabled = true;
-
-            chartHeight.ChartAreas[0].AxisX.ScaleView.Zoomable = true;
-            chartHeight.ChartAreas[0].AxisY.ScaleView.Zoomable = true;
-
-            chartHeight.ChartAreas[0].CursorX.AutoScroll = true;
-            chartHeight.ChartAreas[0].CursorY.AutoScroll = true;
-
-            chartHeight.ChartAreas[0].CursorX.IsUserSelectionEnabled = true;
-            chartHeight.ChartAreas[0].CursorY.IsUserSelectionEnabled = true;
-
-            chart3.ChartAreas[0].AxisX.ScaleView.Zoomable = true;
-            chart3.ChartAreas[0].AxisY.ScaleView.Zoomable = true;
-
-            chart3.ChartAreas[0].CursorX.AutoScroll = true;
-            chart3.ChartAreas[0].CursorY.AutoScroll = true;
-
-            chart3.ChartAreas[0].CursorX.IsUserSelectionEnabled = true;
-            chart3.ChartAreas[0].CursorY.IsUserSelectionEnabled = true;
+            InitChartu(chartSpeed);
+            InitChartu(chartHeight);
+            InitChartu(chart3);
         }
+
+        #region Eventsna kliknuti
 
         private void btnReadGPS_Click(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
-            openFileDialog1.Filter = "NMEA files (*.nmea)|*.nmea|NMEA file (*.NMEA)|*.NMEA|All files (*.*)|*.*";
+            openFileDialog1.Filter = "NMEA files (*.nmea)|*.nmea|NMEA file (*.NMEA)|*.NMEA|Textak file (*.txt)|*.txt|Textak file (*.TXT)|*.TXT|All files (*.*)|*.*";
             openFileDialog1.RestoreDirectory = true;
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
@@ -74,15 +63,20 @@ namespace GPSVisu
 
         }
 
-        /// <summary>
-        /// Funkce pro nacitani dat ze souboru s koncovkou NMEA
-        /// </summary>
-        /// <param name="route">Cesta k souboru</param>
-        private void ReadDataFromFileNMEA(string route)
+        private void Draw_Click(object sender, EventArgs e)
         {
-            string[] rawDataFromFile = File.ReadAllLines(route);
-            DivideDataByType(rawDataFromFile);
+            double[] speedData = Speed();
+            SeriePrDelChartu(chartSpeed);
+            DrawSpeed(chartSpeed,speedData);
+            SeriePrDelChartu(chartHeight);
+            DrawHeight();
+            SeriePrDelChartu(chart3);
+            DrawSat();
         }
+        #endregion
+
+
+        #region Splitovani a parsovani dat
 
         private void DivideDataByType(string[] inputDataFromFile)
         {
@@ -203,13 +197,125 @@ namespace GPSVisu
             return rData;
         }
 
+        #endregion
+
+
+
+        #region Vykreslovaci cast
+
+        private void DrawSpeed(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] speedArray)
+        {
+            string nameLine = "rychle";
+            nameChartek.Series.Add(nameLine);
+            nameChartek.Series[nameLine].ChartType = SeriesChartType.Point;
+
+            for (int i = 0; i < speedArray.Length; i++)
+            {
+                nameChartek.Series[nameLine].Points.AddXY(i, speedArray[i]);
+            }
+
+
+
+        }
+
+        private void DrawSpeedHistogram(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] speedArray, string nameLine)
+        {
+            
+            int range = 100;
+            nameChartek.Series.Add(nameLine);
+            nameChartek.Series[nameLine].ChartType = SeriesChartType.Bar;
+            // double[] pokus = { 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 1,6,6, 2, 3, 4, 5, 6 };range = 2; // Rozložení histogramu {6,4,8}
+
+            double[] inputDataHis = Histogram(speedArray, range);
+            for (int i = 0; i < inputDataHis.Length; i++)
+            {
+                nameChartek.Series[nameLine].Points.AddXY(inputDataHis.Min() + (i * range), inputDataHis[i]);
+            }
+        }
+
+        private void DrawHeight()
+        {
+            string nameLine = "vejska";
+            chartHeight.Series.Add(nameLine);
+            chartHeight.Series[nameLine].ChartType = SeriesChartType.Point;
+            double[] inputDataArray = Heightos();
+            for (int i = 0; i < inputDataArray.Length; i++)
+            {
+                chartHeight.Series[nameLine].Points.AddXY(i, inputDataArray[i]);
+            }
+
+        }
+
+        private void DrawSat()
+        {
+            string nameLine = "sat";
+            chart3.Series.Add(nameLine);
+            chart3.Series[nameLine].ChartType = SeriesChartType.Point;
+            double[] inputDataArray = Sat();
+            for (int i = 0; i < inputDataArray.Length; i++)
+            {
+                chart3.Series[nameLine].Points.AddXY(i, inputDataArray[i]);
+            }
+
+        }
+
+        #endregion
+
+        #region Zakladni vztahovani dat z naparsovaneho souboru
+
+        public double[] Heightos()
+        {
+            double[] heiArr = new double[dataGGA.Count()];
+            int iter = 0;
+            foreach (GGA alti in dataGGA)
+            {
+                heiArr[iter] = alti.Altitude;
+                iter++;
+            }
+            return heiArr;
+
+        }
+
+        public double[] Sat()
+        {
+            double[] satArr = new double[dataGGA.Count()];
+            int iter = 0;
+            foreach (GGA nSat in dataGGA)
+            {
+                satArr[iter] = nSat.NuberSat;
+                iter++;
+            }
+            return satArr;
+
+        }
+
+        public double[] Speed()
+        {
+            double[] speedArr = new double[dataRMC.Count()];
+            int iter = 0;
+            foreach (RMC speed in dataRMC)
+            {
+                speedArr[iter] = speed.SpeedOverGround;
+                iter++;
+            }
+            return speedArr;
+
+        }
+
+        #endregion
+
+        #region Bezne rutiny
+
         /// <summary>
-        /// Predelani separatoru pro budouci praci
+        /// Funkce pro nacitani dat ze souboru s koncovkou NMEA
         /// </summary>
-        /// <param name="inputStringArray">Vstupni stringove pole</param>
-        /// <param name="oldSeparator">Separator kterz ma byt nahrazen</param>
-        /// <param name="newSeparator">Cim ma byt nahrazen</param>
-        /// <returns>Vraci pole stringu s novym separatorem</returns>
+        /// <param name="route">Cesta k souboru</param>
+        private void ReadDataFromFileNMEA(string route)
+        {
+            string[] rawDataFromFile = File.ReadAllLines(route);
+            DivideDataByType(rawDataFromFile);
+        }
+
         private string[] ReplaceSeparator(string[] inputStringArray, string oldSeparator, string newSeparator)
         {
             string[] newArrayWithNewSeparator = new string[inputStringArray.Length];
@@ -218,40 +324,6 @@ namespace GPSVisu
                 newArrayWithNewSeparator[i] = inputStringArray[i].Replace(oldSeparator, newSeparator);
             }
             return newArrayWithNewSeparator;
-        }
-
-        private double[] Histogram(double[] data, int range)
-        {
-            Array.Sort(data);
-            double diference = data.Max() - data.Min();
-            int group = (int)(diference / range);
-            double[] his = new double[group];
-
-
-            for (int j = 0; j < data.Length; j++)
-            {
-                for (int i = 0; i < group; i++)
-                {
-                    if (data[j] > (data.Min() + (range * i)) && data[j] <= (data.Min() + (range * (i + 1))))
-                    {
-                        his[i]++;
-                        break;
-                    }
-                    if(data[j] == data.Min())
-                    {
-                        his[i]++;
-                        break;
-                    }
-                }
-            }
-            return his;
-        }
-
-        private void Draw_Click(object sender, EventArgs e)
-        {
-            DrawSpeed();
-            DrawHeight();
-            DrawSat();
         }
 
         /// <summary>
@@ -272,104 +344,54 @@ namespace GPSVisu
             return inputStringArray;
         }
 
-        private void DrawSpeed()
+        private double[] Histogram(double[] data, int range)
         {
-            string nameLine = "rychle";
-            chartSpeed.Series.Add(nameLine);
-            chartSpeed.Series[nameLine].ChartType = SeriesChartType.Point;
-            double[] speeDat = Speed();
-            for (int i = 0; i < speeDat.Length; i++)
+            Array.Sort(data);
+            double diference = data.Max() - data.Min();
+            int group = (int)(diference / range);
+            double[] his = new double[group];
+
+
+            for (int j = 0; j < data.Length; j++)
             {
-                chartSpeed.Series[nameLine].Points.AddXY(i, speeDat[i]);
+                for (int i = 0; i < group; i++)
+                {
+                    if (data[j] > (data.Min() + (range * i)) && data[j] <= (data.Min() + (range * (i + 1))))
+                    {
+                        his[i]++;
+                        break;
+                    }
+                    if (data[j] == data.Min())
+                    {
+                        his[i]++;
+                        break;
+                    }
+                }
             }
+            return his;
+        }
 
-            string name = "rychleHis";
-            int range = 2;
-            chartSpeedHis.Series.Add(name);
-            chartSpeedHis.Series[name].ChartType = SeriesChartType.Bar;
-            double[] pokus = { 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 1, 2, 3, 4, 5, 6 };
+        private void InitChartu(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek)
+        {
+            nameChartek.ChartAreas[0].AxisX.ScaleView.Zoomable = true;
+            nameChartek.ChartAreas[0].AxisY.ScaleView.Zoomable = true;
 
-            //double[] speeDatas = new double[speeDat.Length/20];
-            //int k = 0;
-            //for (int i = 0; i < speeDat.Length; i+=20)
-            //{
-            //    speeDatas[k] = speeDat[i];
-            //    k++;
-            //}
+            nameChartek.ChartAreas[0].CursorX.AutoScroll = true;
+            nameChartek.ChartAreas[0].CursorY.AutoScroll = true;
 
-            double[] inputDataHis = Histogram(pokus, range);
-            //for (int i = 0; i < inputDataHis.Length; i++)
-            //{
-            //    chartSpeedHis.Series[name].Points.AddXY(inputDataHis.Min()+(i*range), inputDataHis[i]);
-            //}
+            nameChartek.ChartAreas[0].CursorX.IsUserSelectionEnabled = true;
+            nameChartek.ChartAreas[0].CursorY.IsUserSelectionEnabled = true;
 
         }
 
-        public double[] Speed()
+        private void SeriePrDelChartu(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek)
         {
-            double[] speedArr = new double[dataRMC.Count()];
-            int iter = 0;
-            foreach (RMC speed in dataRMC)
-            {
-                speedArr[iter] = speed.SpeedOverGround;
-                iter++;
+            for (int i = 0; i < nameChartek.Series.Count; i++)
+			{
+                nameChartek.Series.RemoveAt(i); 
             }
-            return speedArr;
-
         }
 
-        private void DrawHeight()
-        {
-            string nameLine = "vejska";
-            chartHeight.Series.Add(nameLine);
-            chartHeight.Series[nameLine].ChartType = SeriesChartType.Point;
-            double[] inputDataArray = Heightos();
-            for (int i = 0; i < inputDataArray.Length; i++)
-            {
-                chartHeight.Series[nameLine].Points.AddXY(i, inputDataArray[i]);
-            }
-
-        }
-
-        public double[] Heightos()
-        {
-            double[] heiArr = new double[dataGGA.Count()];
-            int iter = 0;
-            foreach (GGA alti in dataGGA)
-            {
-                heiArr[iter] = alti.Altitude;
-                iter++;
-            }
-            return heiArr;
-
-        }
-
-        private void DrawSat()
-        {
-            string nameLine = "sat";
-            chart3.Series.Add(nameLine);
-            chart3.Series[nameLine].ChartType = SeriesChartType.Point;
-            double[] inputDataArray = Sat();
-            for (int i = 0; i < inputDataArray.Length; i++)
-            {
-                chart3.Series[nameLine].Points.AddXY(i, inputDataArray[i]);
-            }
-
-        }
-
-        public double[] Sat()
-        {
-            double[] satArr = new double[dataGGA.Count()];
-            int iter = 0;
-            foreach (GGA nSat in dataGGA)
-            {
-                satArr[iter] = nSat.NuberSat;
-                iter++;
-            }
-            return satArr;
-
-        }
-
-
+        #endregion
     }
 }
